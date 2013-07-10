@@ -24,7 +24,8 @@ class LargeRequest(server.Request):
     # enable/disable debug logging
     do_log = False
     
-    # re-defined only for debug/logging purposes
+    # re-defined only for debug/logging purposes as gotLength() is called when the
+    # request headers are initially received.
     def gotLength(self, length):
         if self.do_log:
             print '%f Headers received, Content-Length: %d' % (time.time(), length)
@@ -34,6 +35,7 @@ class LargeRequest(server.Request):
     # is that self.parse_multipart() is used rather than cgi.parse_multipart()
     def requestReceived(self, command, path, version):
         if self.do_log:
+            # logging here to mark that the entire raw request has been received.
             print '%f Request Received' % time.time()
         self.content.seek(0,0)
         self.args = {}
