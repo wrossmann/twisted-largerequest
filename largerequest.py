@@ -24,8 +24,7 @@ class LargeRequest(server.Request):
     # enable/disable debug logging
     do_log = False
     
-    # re-defined only for debug/logging purposes as gotLength() is called when the
-    # request headers are initially received.
+    # re-defined only for debug/logging purposes
     def gotLength(self, length):
         if self.do_log:
             print '%f Headers received, Content-Length: %d' % (time.time(), length)
@@ -34,8 +33,8 @@ class LargeRequest(server.Request):
     # re-definition of twisted.web.server.Request.requestrecieved, the only difference
     # is that self.parse_multipart() is used rather than cgi.parse_multipart()
     def requestReceived(self, command, path, version):
+        from twisted.web.http import parse_qs
         if self.do_log:
-            # logging here to mark that the entire raw request has been received.
             print '%f Request Received' % time.time()
         self.content.seek(0,0)
         self.args = {}
@@ -49,7 +48,7 @@ class LargeRequest(server.Request):
             self.path = self.uri
         else:
             self.path, argstring = x
-            self.args = self.parse_qs(argstring, 1)
+            self.args = parse_qs(argstring, 1)
 
         # cache the client and server information, we'll need this later to be
         # serialized and sent with the request so CGIs will work remotely
@@ -66,7 +65,7 @@ class LargeRequest(server.Request):
             mfd = b'multipart/form-data'
             key, pdict = _parseHeader(ctype)
             if key == b'application/x-www-form-urlencoded':
-                args.update(self.parse_qs(self.content.read(), 1))
+                args.update(parse_qs(self.content.read(), 1))
             elif key == mfd:
                 try:
                     self.content.seek(0,0)
@@ -164,7 +163,7 @@ class LargeRequest(server.Request):
                     if fname_index in partdict:
                         partdict[fname_index].append(params['filename'])
                     else:
-                        partdict[name + '_filename'] = [params['filename']]
+                        partdict[fname_index] = [params['filename']]
             else:
                 # unnamed parts are not returned at all.
                 continue
