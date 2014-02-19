@@ -123,7 +123,7 @@ class LargeRequest(server.Request):
                     except ValueError:
                         pass
                 if c_bytes > 0:
-                    data.write(fp.read(bytes))
+                    data.write(fp.read(c_bytes))
             # Read lines until end of part.
             while 1:
                 line = fp.readline()
@@ -138,10 +138,13 @@ class LargeRequest(server.Request):
             # Done with part.
             if data.tell() == 0:
                 continue
-            if bytes < 0:
+            if c_bytes < 0:
                 # if a Content-Length header was not supplied with the MIME part
-                # then the trailing line break must be removed. the var 'line'
-                # will still contain the last line written for reference.
+                # then the trailing line break must be removed.
+                # we have data, read the last 2 bytes
+                rewind = min(2, data.tell())
+                data.seek(-rewind , os.SEEK_END)
+                line = data.read(2)
                 if line[-2:] == "\r\n":
                     data.seek(-2, os.SEEK_END)
                     data.truncate()
